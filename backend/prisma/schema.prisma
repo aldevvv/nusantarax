@@ -1,0 +1,349 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  password        String?   // Nullable for OAuth-only users
+  fullName        String
+  role            Role      @default(USER)
+  
+  // Email verification
+  emailVerified   Boolean   @default(false)
+  emailVerificationToken String? @unique
+  emailVerificationExpires DateTime?
+  
+  // Password reset
+  passwordResetToken String? @unique
+  passwordResetExpires DateTime?
+  
+  // OAuth providers
+  providers       UserProvider[]
+  
+  // Thumbnail requests
+  thumbnailRequests ThumbnailRequest[]
+  
+  // Caption requests
+  captionRequests CaptionRequest[]
+  captionAnalytics CaptionAnalytics[]
+  
+  // Optimize requests
+  optimizeRequests OptimizeRequest[]
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+  
+  @@map("users")
+}
+
+
+model UserProvider {
+  id         String   @id @default(cuid())
+  userId     String
+  provider   Provider @default(LOCAL)
+  providerId String?  // OAuth provider user ID
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([userId, provider])
+  @@map("user_providers")
+}
+
+model ThumbnailRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  
+  // Input data
+  originalFileName String?
+  originalFileSize Int?
+  originalMimeType String?
+  imageData       String?   @db.Text // Base64 encoded image (when upload flow)
+  brief           Json?
+  finalPrompt     String?   @db.Text
+  
+  // Processing details
+  promptId        String
+  promptText      String
+  modelUsed       String    @default("google-imagen-4.0")
+  
+  // Results
+  status          RequestStatus @default(PROCESSING)
+  results         ThumbnailResult[]
+  
+  // Performance metrics
+  processingTime  Int?      // milliseconds
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("thumbnail_requests")
+}
+
+model ThumbnailResult {
+  id           String           @id @default(cuid())
+  requestId    String
+  request      ThumbnailRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Result data
+  promptVariation String          // Specific prompt used for this result
+  resultText     String   @db.Text // Generated description/instructions
+  imageUrl       String?          // URL of generated thumbnail image in storage
+  resultOrder    Int              // 1, 2, or 3
+  
+  createdAt      DateTime @default(now())
+  
+  @@map("thumbnail_results")
+}
+
+model CaptionRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  // Input data
+  originalFileName String
+  originalFileSize Int
+  originalMimeType String
+  imageData       String   @db.Text // Base64 encoded image
+  
+  // AI Analysis results
+  productAnalysis Json     // Structured product intelligence
+  targetAudience  String?
+  brandTone       String?
+  productCategory String?
+  keyFeatures     String[] // Array of detected features
+  
+  // Processing details
+  platforms       Platform[] // Selected platforms for generation
+  formats         CaptionFormat[] // Selected formats
+  modelUsed       String   @default("gemini-2.0-flash")
+  
+  // Status and performance
+  status          RequestStatus @default(PROCESSING)
+  processingTime  Int?     // milliseconds
+  errorMessage    String?
+  
+  // Results and analytics
+  captions        CaptionResult[]
+  totalVariations Int      @default(0)
+  bestPerformer   String?  // ID of best performing caption
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("caption_requests")
+}
+
+model CaptionResult {
+  id           String         @id @default(cuid())
+  requestId    String
+  request      CaptionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Platform and format
+  platform     Platform
+  format       CaptionFormat
+  version      Int            // 1, 2, 3 for A/B testing variations
+  
+  // Content
+  caption      String         @db.Text
+  hashtags     String[]       // Array of hashtags
+  callToAction String?
+  characterCount Int
+  
+  // AI Predictions
+  engagementScore    Int      @default(0) // 1-100 predicted engagement
+  viralPotential     Int      @default(0) // 1-100 viral prediction
+  conversionScore    Int      @default(0) // 1-100 conversion prediction
+  audienceMatch      Int      @default(0) // 1-100 audience alignment
+  overallScore       Int      @default(0) // Weighted combination score
+  
+  // Performance tracking (for future actual data)
+  actualViews       Int?     @default(0)
+  actualEngagement  Int?     @default(0)
+  actualConversions Int?     @default(0)
+  actualROI         Float?   // Return on investment
+  
+  // Recommendations
+  strengths         String[] // What makes this caption strong
+  improvements      String[] // Suggested optimizations
+  riskFactors       String[] // Potential issues
+  
+  createdAt    DateTime @default(now())
+  
+  @@map("caption_results")
+}
+
+model CaptionAnalytics {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Analytics period
+  platform    Platform
+  period      DateTime // Month/week aggregation key
+  
+  // Performance metrics
+  totalCaptions     Int   @default(0)
+  totalViews        Int   @default(0)
+  totalEngagement   Int   @default(0)
+  totalConversions  Int   @default(0)
+  
+  // ROI calculations
+  averageROI        Float?  // Return on investment
+  bestPerformingTone String? // "professional", "casual", etc.
+  optimalLength     Int?    // Character count sweet spot
+  topHashtags       String[] // Best performing hashtags
+  
+  // Insights
+  trendingTopics    String[] // Current trending elements
+  audienceInsights  Json?    // Detailed audience analysis
+  competitorData    Json?    // Competitive intelligence
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, platform, period])
+  @@map("caption_analytics")
+}
+
+model ApiCallLog {
+  id            String    @id @default(cuid())
+  
+  // API call details
+  endpoint      String    // e.g., "gemini/generate", "gemini/analyze"
+  method        String    // HTTP method
+  modelUsed     String?   // Which Gemini model was used
+  
+  // Request/Response tracking
+  status        ApiCallStatus @default(SUCCESS)
+  responseTime  Int?      // milliseconds
+  inputTokens   Int?      // Tokens consumed in request
+  outputTokens  Int?      // Tokens generated in response
+  totalTokens   Int?      // inputTokens + outputTokens
+  
+  // Error tracking
+  errorMessage  String?   @db.Text
+  errorCode     String?
+  
+  // Additional metadata
+  userId        String?   // Optional: track per user
+  requestSize   Int?      // Request payload size in bytes
+  responseSize  Int?      // Response size in bytes
+  
+  createdAt     DateTime  @default(now())
+  
+  @@map("api_call_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Provider {
+  LOCAL
+  GITHUB
+  GOOGLE
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+}
+
+enum CaptionFormat {
+  SHORT
+  MEDIUM
+  LONG
+  SHORT_NO_HASHTAGS
+  MEDIUM_NO_HASHTAGS
+  LONG_NO_HASHTAGS
+}
+
+enum RequestStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model OptimizeRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  
+  // Input data
+  originalFileName String
+  originalFileSize Int
+  originalMimeType String
+  imageData       String    @db.Text // Base64 encoded original image
+  
+  // Processing settings
+  templateId      String    // Template selection (e.g., "social-media", "ecommerce", "catalog")
+  templateName    String    // Human readable template name
+  optimizations   Json      // Optimization settings (cropping, lighting, etc.)
+  exportFormats   String[]  // Requested formats: ["JPG", "PNG", "WEBP"]
+  
+  // AI processing
+  modelUsed       String    @default("gemini-2.5-flash-image-preview")
+  finalPrompt     String?   @db.Text // Gemini prompt for optimization
+  
+  // Results
+  status          RequestStatus @default(PROCESSING)
+  results         OptimizeResult[]
+  
+  // Performance metrics
+  processingTime  Int?      // milliseconds
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("optimize_requests")
+}
+
+model OptimizeResult {
+  id           String          @id @default(cuid())
+  requestId    String
+  request      OptimizeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Result data
+  templateUsed   String        // Template applied
+  format         String        // Output format (JPG, PNG, WEBP)
+  imageUrl       String        // URL of optimized image in storage
+  fileSize       Int           // Optimized file size in bytes
+  dimensions     Json          // {width: number, height: number}
+  
+  // Optimization details
+  optimizationsApplied Json    // List of optimizations applied
+  qualityScore     Int?        // 1-100 quality assessment
+  improvementNotes String[]    // What was improved
+  
+  createdAt      DateTime @default(now())
+  
+  @@map("optimize_results")
+}
+
+enum ApiCallStatus {
+  SUCCESS
+  FAILED
+  TIMEOUT
+  RATE_LIMITED
+}
