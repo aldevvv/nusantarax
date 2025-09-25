@@ -28,7 +28,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     // Environment configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
     }),
     
     // Rate limiting
