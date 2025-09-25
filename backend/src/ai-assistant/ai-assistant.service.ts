@@ -200,7 +200,6 @@ Remember: I am exclusively focused on digital marketing excellence. Every respon
         responseSize: 0, // Will be set by caller
       });
 
-      console.log(`📊 Token usage tracked for AI Assistant: ${tokens.input} in + ${tokens.output} out = ${tokens.total} total`);
     } catch (error) {
       console.error('Failed to track token usage:', error);
       // Don't throw error - tracking failure shouldn't break chat
@@ -220,8 +219,6 @@ Remember: I am exclusively focused on digital marketing excellence. Every respon
     const expiry = new Date(timestamp + 24 * 60 * 60 * 1000); // 24 hours
 
     try {
-      console.log(`📤 Uploading image to cache: ${fileName} (${imageBuffer.length} bytes)`);
-
       // Upload to existing 'images' bucket
       const { data, error } = await this.supabase.storage
         .from('images')
@@ -239,8 +236,6 @@ Remember: I am exclusively focused on digital marketing excellence. Every respon
         .from('images')
         .getPublicUrl(fileName);
 
-      console.log(`✅ Image uploaded to cache: ${publicUrl.publicUrl}`);
-
       // Schedule cleanup after 24h (in production, this should be handled by a cron job)
       setTimeout(() => this.cleanupExpiredImage(fileName), 24 * 60 * 60 * 1000);
 
@@ -256,16 +251,12 @@ Remember: I am exclusively focused on digital marketing excellence. Every respon
    */
   private async cleanupExpiredImage(fileName: string): Promise<void> {
     try {
-      console.log(`🗑️ Cleaning up expired cached image: ${fileName}`);
-      
       const { error } = await this.supabase.storage
         .from('images')
         .remove([fileName]);
       
       if (error) {
         console.error('Failed to cleanup expired image:', error);
-      } else {
-        console.log(`✅ Expired image cleaned up: ${fileName}`);
       }
     } catch (error) {
       console.error('Error during image cleanup:', error);
@@ -349,8 +340,6 @@ Remember: I am exclusively focused on digital marketing excellence. Every respon
           }
         }
       });
-      
-      console.log(`✅ Created new AI Assistant session for user: ${userId}`);
     }
 
     return {
@@ -496,8 +485,6 @@ Respond as NusantaraX AI with expert digital marketing advice. If an image was s
         total: totalTokens
       });
 
-      console.log(`✅ AI Assistant message processed in ${processingTime}ms`);
-
       return {
         success: true,
         message: 'Message sent successfully',
@@ -505,6 +492,7 @@ Respond as NusantaraX AI with expert digital marketing advice. If an image was s
           id: assistantMessage.id,
           role: assistantMessage.role,
           content: assistantMessage.content,
+          response: assistantMessage.content, // Add response alias for compatibility
           processingTime: assistantMessage.processingTime,
           inputTokens: assistantMessage.inputTokens,
           outputTokens: assistantMessage.outputTokens,
@@ -613,8 +601,6 @@ Respond as NusantaraX AI with expert digital marketing advice. If an image was s
           lastContextUpdate: new Date(),
         }
       });
-
-      console.log(`✅ Global context updated for user: ${userId}`);
 
       return {
         success: true,
@@ -736,8 +722,6 @@ Respond as NusantaraX AI with expert digital marketing advice. If an image was s
           lastActivityAt: new Date(),
         }
       });
-
-      console.log(`✅ AI Assistant session cleared for user: ${userId}`);
 
       return {
         success: true,

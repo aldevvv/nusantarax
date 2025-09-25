@@ -20,6 +20,23 @@ interface AIAssistantChatBubbleProps {
 }
 
 const AIAssistantChatBubble: React.FC<AIAssistantChatBubbleProps> = ({ message }) => {
+  // Function to parse bold text (**text**)
+  const parseMessage = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // Remove ** markers and make bold
+        const boldText = part.slice(2, -2);
+        return (
+          <span key={index} className="font-bold">
+            {boldText}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -54,7 +71,7 @@ const AIAssistantChatBubble: React.FC<AIAssistantChatBubbleProps> = ({ message }
           )}
           
           <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
+            {parseMessage(message.content)}
           </div>
           
           {(message.inputTokens || message.outputTokens) && !message.isUser && (

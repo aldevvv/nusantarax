@@ -195,15 +195,7 @@ const CaptionGeneratorPage = () => {
         includeBusinessInfo: formData.includeBusinessInfo,
       };
 
-      // 🔍 DEBUG: Log what we're sending to the API
-      console.log('🔍 DEBUG Frontend API Call Data:', {
-        hasImage: !!generateData.image,
-        language: generateData.language,
-        languageType: typeof generateData.language,
-        platform: generateData.platform,
-        tone: generateData.tone,
-        fullGenerateData: generateData
-      });
+      // Data prepared for API call
 
       // Step 2: Analyze image and generate captions
       setProgress('Analyzing image with AI...');

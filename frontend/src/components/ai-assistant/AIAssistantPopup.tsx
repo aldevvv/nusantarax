@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AIAssistantChatBubble from './AIAssistantChatBubble';
 import AIAssistantTypingIndicator from './AIAssistantTypingIndicator';
 import AIAssistantSettingsModal from './AIAssistantSettingsModal';
@@ -43,7 +42,6 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [session, setSession] = useState<any>(null);
@@ -79,13 +77,13 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
 
   // Focus input when popup opens
   useEffect(() => {
-    if (isOpen && activeTab === 'chat') {
+    if (isOpen) {
       setTimeout(() => {
         inputRef.current?.focus();
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen]);
 
   const initializeSession = async () => {
     try {
@@ -97,7 +95,7 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
           const formattedMessages = sessionResponse.data.messages.map((msg: any) => ({
             id: msg.id,
             content: msg.content,
-            isUser: msg.role === 'user',
+            isUser: msg.role === 'USER',
             timestamp: new Date(msg.createdAt),
             imageUrl: msg.imageUrl,
             inputTokens: msg.inputTokens,
@@ -155,20 +153,23 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
     setInputMessage('');
     setIsTyping(true);
     setIsLoading(true);
+    
+    // Clear selected image immediately after adding to messages
+    removeSelectedImage();
 
     try {
       const formData = new FormData();
-      formData.append('message', inputMessage.trim());
+      formData.append('content', inputMessage.trim()); // Backend expects 'content', not 'message'
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
-
+      
       const response = await aiAssistantAPI.sendMessage(formData);
 
       if (response.success) {
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: response.data.response,
+          content: response.data.content || response.data.response || response.data.message || 'Empty response',
           isUser: false,
           timestamp: new Date(),
           inputTokens: response.data.inputTokens,
@@ -206,8 +207,6 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
       }, 1000);
 
       toast.error('Failed to send message');
-    } finally {
-      removeSelectedImage();
     }
   };
 
@@ -265,7 +264,7 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
                 </div>
                 <div>
                   <h3 className="text-white font-semibold">AI Assistant</h3>
-                  <p className="text-gray-400 text-sm">Marketing Expert • Gemini 2.5 Pro</p>
+                  <p className="text-gray-400 text-sm">Digital Marketing Expert</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -289,37 +288,18 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* Chat Interface */}
           <div className="flex-1 flex flex-col min-h-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 gap-1 mx-4 mt-2 flex-shrink-0">
-                <TabsTrigger
-                  value="chat"
-                  className="flex items-center justify-center space-x-2 text-gray-400 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#72c306] data-[state=active]:to-[#8fd428] rounded-lg px-3 py-2 border border-transparent hover:border-[#72c306]/30 transition-colors text-sm"
-                >
-                  <Bot className="h-4 w-4" />
-                  <span>Chat</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="stats"
-                  className="flex items-center justify-center space-x-2 text-gray-400 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#72c306] data-[state=active]:to-[#8fd428] rounded-lg px-3 py-2 border border-transparent hover:border-[#72c306]/30 transition-colors text-sm"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Stats</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 mt-2">
-                {/* Chat messages area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-transparent to-black/20 scrollbar-hide">
-                  {messages.map((message) => (
-                    <AIAssistantChatBubble key={message.id} message={message} />
-                  ))}
-                  
-                  {isTyping && <AIAssistantTypingIndicator />}
-                  
-                  <div ref={messagesEndRef} />
-                </div>
+            {/* Chat messages area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-transparent to-black/20 scrollbar-hide">
+              {messages.map((message) => (
+                <AIAssistantChatBubble key={message.id} message={message} />
+              ))}
+              
+              {isTyping && <AIAssistantTypingIndicator />}
+              
+              <div ref={messagesEndRef} />
+            </div>
 
                 {/* Image preview */}
                 {previewUrl && (
@@ -340,97 +320,56 @@ const AIAssistantPopup: React.FC<AIAssistantPopupProps> = ({ isOpen, onClose }) 
                   </div>
                 )}
 
-                {/* Input area */}
-                <div className="flex-shrink-0 p-4 border-t border-[#72c306]/20 bg-black/95 backdrop-blur-sm">
-                  <div className="flex space-x-2">
-                    <div className="flex space-x-1">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isLoading}
-                        className="text-gray-400 hover:text-white hover:bg-gray-800/50 p-2"
-                      >
-                        <ImageIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Input
-                      ref={inputRef}
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask me about digital marketing..."
-                      disabled={isLoading}
-                      className="flex-1 bg-gray-800/50 border-gray-600/50 focus:border-[#72c306] text-white placeholder-gray-400"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
-                      className="bg-gradient-to-r from-[#72c306] to-[#8fd428] hover:from-[#72c306]/90 hover:to-[#8fd428]/90 text-white px-4"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* Stats indicator */}
-                  <div className="flex items-center justify-center mt-2">
-                    <span className="text-xs text-gray-500">
-                      {session ? `Session: ${session.totalMessages || 0} messages, ${session.totalTokens || 0} tokens` : 'Loading session...'}
-                    </span>
-                  </div>
+            {/* Input area */}
+            <div className="flex-shrink-0 p-4 border-t border-[#72c306]/20 bg-black/95 backdrop-blur-sm">
+              <div className="flex space-x-2">
+                <div className="flex space-x-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                    className="text-gray-400 hover:text-white hover:bg-gray-800/50 p-2"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                  </Button>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="stats" className="flex-1 p-4 overflow-y-auto">
-                {session ? (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <h3 className="text-white font-semibold mb-4">Session Statistics</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                        <p className="text-gray-400 text-sm">Messages</p>
-                        <p className="text-white font-bold text-xl">{session.totalMessages || 0}</p>
-                      </div>
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                        <p className="text-gray-400 text-sm">Total Tokens</p>
-                        <p className="text-white font-bold text-xl">{session.totalTokens || 0}</p>
-                      </div>
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                        <p className="text-gray-400 text-sm">Input Tokens</p>
-                        <p className="text-white font-bold text-xl">{session.inputTokens || 0}</p>
-                      </div>
-                      <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                        <p className="text-gray-400 text-sm">Output Tokens</p>
-                        <p className="text-white font-bold text-xl">{session.outputTokens || 0}</p>
-                      </div>
-                    </div>
-                    {session.lastMessageAt && (
-                      <div className="text-center">
-                        <p className="text-gray-400 text-sm">
-                          Last activity: {new Date(session.lastMessageAt).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400">
-                    Loading statistics...
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                <Input
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me about digital marketing..."
+                  disabled={isLoading}
+                  className="flex-1 bg-gray-800/50 border-gray-600/50 focus:border-[#72c306] text-white placeholder-gray-400"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
+                  className="bg-gradient-to-r from-[#72c306] to-[#8fd428] hover:from-[#72c306]/90 hover:to-[#8fd428]/90 text-white px-4"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Powered by indicator */}
+              <div className="flex items-center justify-center mt-2">
+                <span className="text-xs text-gray-500">
+                  Powered by NusantaraX AI
+                </span>
+              </div>
+            </div>
           </div>
         </motion.div>
       </motion.div>

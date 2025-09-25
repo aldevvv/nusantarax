@@ -10,18 +10,13 @@ import { aiAssistantAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface AIAssistantStats {
-  totalSessions: number;
   totalMessages: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   totalTokens: number;
-  inputTokens: number;
-  outputTokens: number;
-  avgTokensPerMessage: number;
-  lastUsed: string | null;
-  dailyUsage: Array<{
-    date: string;
-    messages: number;
-    tokens: number;
-  }>;
+  averageTokensPerMessage: number;
+  createdAt: string | null;
+  lastActivityAt: string | null;
 }
 
 const fadeInUp = {
@@ -103,50 +98,50 @@ const AIAssistantStatsSection: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm">Sessions</p>
-              <p className="text-white font-bold text-xl">{stats.totalSessions.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-              <Activity className="h-4 w-4 text-green-400" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 text-[#72c306]" />
             </div>
             <div>
               <p className="text-gray-400 text-sm">Messages</p>
-              <p className="text-white font-bold text-xl">{stats.totalMessages.toLocaleString()}</p>
+              <p className="text-white font-bold text-xl">{(stats.totalMessages || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Zap className="h-4 w-4 text-purple-400" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">
+              <Activity className="h-4 w-4 text-[#72c306]" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Input Tokens</p>
+              <p className="text-white font-bold text-xl">{(stats.totalInputTokens || 0).toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">
+              <Zap className="h-4 w-4 text-[#72c306]" />
             </div>
             <div>
               <p className="text-gray-400 text-sm">Total Tokens</p>
-              <p className="text-white font-bold text-xl">{stats.totalTokens.toLocaleString()}</p>
+              <p className="text-white font-bold text-xl">{(stats.totalTokens || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-orange-400" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-[#72c306]" />
             </div>
             <div>
               <p className="text-gray-400 text-sm">Avg/Message</p>
-              <p className="text-white font-bold text-xl">{Math.round(stats.avgTokensPerMessage)}</p>
+              <p className="text-white font-bold text-xl">{Math.round(stats.averageTokensPerMessage || 0)}</p>
             </div>
           </div>
         </div>
@@ -154,7 +149,7 @@ const AIAssistantStatsSection: React.FC = () => {
 
       {/* Token Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
           <h4 className="text-white font-medium mb-4 flex items-center">
             <BarChart3 className="h-4 w-4 text-[#72c306] mr-2" />
             Token Breakdown
@@ -162,27 +157,31 @@ const AIAssistantStatsSection: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Input Tokens</span>
-              <span className="text-blue-400 font-bold">{stats.inputTokens.toLocaleString()}</span>
+              <span className="text-blue-400 font-bold">{(stats.totalInputTokens || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Output Tokens</span>
-              <span className="text-green-400 font-bold">{stats.outputTokens.toLocaleString()}</span>
+              <span className="text-green-400 font-bold">{(stats.totalOutputTokens || 0).toLocaleString()}</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full" 
-                style={{ 
-                  width: `${(stats.outputTokens / stats.totalTokens) * 100}%` 
-                }}
-              ></div>
-            </div>
-            <p className="text-xs text-gray-500 text-center">
-              {Math.round((stats.outputTokens / stats.totalTokens) * 100)}% output, {Math.round((stats.inputTokens / stats.totalTokens) * 100)}% input
-            </p>
+            {stats.totalTokens > 0 && (
+              <>
+                <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full" 
+                    style={{ 
+                      width: `${((stats.totalOutputTokens || 0) / stats.totalTokens) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  {Math.round(((stats.totalOutputTokens || 0) / stats.totalTokens) * 100)}% output, {Math.round(((stats.totalInputTokens || 0) / stats.totalTokens) * 100)}% input
+                </p>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div className="bg-black border border-[#72c306]/30 rounded-lg p-4">
           <h4 className="text-white font-medium mb-4 flex items-center">
             <Clock className="h-4 w-4 text-[#72c306] mr-2" />
             Usage Status
@@ -191,8 +190,8 @@ const AIAssistantStatsSection: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Last Used</span>
               <span className="text-white text-sm">
-                {stats.lastUsed 
-                  ? new Date(stats.lastUsed).toLocaleDateString('en-US', {
+                {stats.lastActivityAt 
+                  ? new Date(stats.lastActivityAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',

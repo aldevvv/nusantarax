@@ -6,10 +6,11 @@ import {
   X,
   Settings,
   Save,
-  Trash2,
   AlertCircle,
   CheckCircle,
-  Info
+  Info,
+  ShoppingCart,
+  Pizza
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,8 +48,8 @@ const AIAssistantSettingsModal: React.FC<AIAssistantSettingsModalProps> = ({ isO
         const configData = response.data;
         setContext(configData.globalContext || '');
         setOriginalContext(configData.globalContext || '');
-        if (configData.updatedAt) {
-          setLastUpdate(new Date(configData.updatedAt));
+        if (configData.lastContextUpdate) {
+          setLastUpdate(new Date(configData.lastContextUpdate));
         }
       }
     } catch (error) {
@@ -85,11 +86,6 @@ const AIAssistantSettingsModal: React.FC<AIAssistantSettingsModalProps> = ({ isO
     setContext(originalContext);
   };
 
-  const handleClearContext = () => {
-    if (window.confirm('Are you sure you want to clear all business context? This action cannot be undone.')) {
-      setContext('');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -201,7 +197,7 @@ I run a coffee shop called 'Warung Kopi Nusantara' in Jakarta targeting young pr
               <CardContent className="space-y-4 text-xs">
                 <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                   <h4 className="text-white font-medium mb-2 flex items-center space-x-2">
-                    <span>🛒</span>
+                    <ShoppingCart className="h-4 w-4 text-[#72c306]" />
                     <span>E-commerce Business</span>
                   </h4>
                   <p className="text-gray-400 leading-relaxed">
@@ -211,7 +207,7 @@ I run a coffee shop called 'Warung Kopi Nusantara' in Jakarta targeting young pr
                 
                 <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                   <h4 className="text-white font-medium mb-2 flex items-center space-x-2">
-                    <span>🍕</span>
+                    <Pizza className="h-4 w-4 text-[#72c306]" />
                     <span>Local F&B Business</span>
                   </h4>
                   <p className="text-gray-400 leading-relaxed">
@@ -245,26 +241,15 @@ I run a coffee shop called 'Warung Kopi Nusantara' in Jakarta targeting young pr
                 )}
               </Button>
               
-              <div className="flex space-x-3 order-2 sm:order-1">
-                {hasChanges && (
-                  <Button
-                    onClick={handleResetChanges}
-                    variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                  >
-                    Reset Changes
-                  </Button>
-                )}
-                
+              {hasChanges && (
                 <Button
-                  onClick={handleClearContext}
+                  onClick={handleResetChanges}
                   variant="outline"
-                  className="border-red-600/70 text-red-500 hover:bg-red-600/20 hover:border-red-600 hover:text-red-400 transition-all duration-200"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-800 order-2 sm:order-1"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear
+                  Reset Changes
                 </Button>
-              </div>
+              )}
             </div>
           </div>
         </motion.div>

@@ -878,12 +878,8 @@ export const captionGeneratorAPI = {
 // AI Assistant API management
 export const aiAssistantAPI = {
   // Send message to AI Assistant
-  async sendMessage(data: { content: string; image?: File }) {
-    const formData = new FormData();
-    formData.append('content', data.content);
-    if (data.image) {
-      formData.append('image', data.image);
-    }
+  async sendMessage(formData: FormData) {
+    // FormData is already prepared by the component
 
     const response = await api.post('/ai-assistant/send-message', formData, {
       headers: {
@@ -943,6 +939,19 @@ export const aiAssistantAPI = {
   // Delete specific message
   async deleteMessage(messageId: string) {
     const response = await api.delete(`/ai-assistant/message/${messageId}`);
+    return response.data;
+  },
+
+  // Get configuration (placeholder method)
+  async getConfiguration() {
+    // Use context endpoint to get configuration
+    const response = await api.get('/ai-assistant/context');
+    return response.data;
+  },
+
+  // Save configuration
+  async saveConfiguration(data: { globalContext: string }) {
+    const response = await api.put('/ai-assistant/context', data);
     return response.data;
   },
 };
@@ -1020,6 +1029,54 @@ export const handleApiError = (error: AxiosError<ApiError>): string => {
   }
   
   return 'An unexpected error occurred. Please try again.';
+};
+
+// Admin Plans API management
+export const adminPlansAPI = {
+  // Get all subscription plans with usage counts
+  async getAllPlans() {
+    const response = await api.get('/admin/plans');
+    return response.data;
+  },
+
+  // Get a specific plan by ID
+  async getPlanById(id: string) {
+    const response = await api.get(`/admin/plans/${id}`);
+    return response.data;
+  },
+
+  // Update subscription plan
+  async updatePlan(id: string, data: {
+    name?: string;
+    displayName?: string;
+    description?: string;
+    monthlyRequests?: number;
+    monthlyPrice?: number;
+    yearlyPrice?: number;
+    isActive?: boolean;
+    sortOrder?: number;
+  }) {
+    const response = await api.patch(`/admin/plans/${id}`, data);
+    return response.data;
+  },
+
+  // Get plan usage statistics
+  async getPlanUsageStats(id: string) {
+    const response = await api.get(`/admin/plans/${id}/stats`);
+    return response.data;
+  },
+
+  // Get plans comparison data
+  async getPlansComparison() {
+    const response = await api.get('/admin/plans/comparison');
+    return response.data;
+  },
+
+  // Get plans subscription counts
+  async getSubscriptionCounts() {
+    const response = await api.get('/admin/plans/subscription-counts');
+    return response.data;
+  }
 };
 
 // Export the main API instance for other uses

@@ -316,11 +316,16 @@ const DashboardPage = () => {
           variants={fadeInUp}
           className="bg-black border border-[#72c306]/30 rounded-lg shadow-lg p-6 mb-8"
         >
-          <h3 className="text-lg font-semibold mb-6 text-white">Available Services</h3>
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center mr-3">
+              <BarChart3 className="h-5 w-5 text-[#72c306]" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Available Services</h3>
+          </div>
           <div className="grid md:grid-cols-2 gap-4">
             <Link
               href="/dashboard/services/image-generator"
-              className="group bg-gray-900/50 border border-gray-700 rounded-lg p-4 hover:border-[#72c306]/30 transition-colors"
+              className="group bg-black border border-[#72c306]/30 rounded-lg p-4 hover:border-[#8fd428]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#72c306]/10"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">
@@ -334,7 +339,7 @@ const DashboardPage = () => {
 
             <Link
               href="/dashboard/services/caption-generator"
-              className="group bg-gray-900/50 border border-gray-700 rounded-lg p-4 hover:border-[#72c306]/30 transition-colors"
+              className="group bg-black border border-[#72c306]/30 rounded-lg p-4 hover:border-[#8fd428]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#72c306]/10"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-[#72c306]/20 to-[#8fd428]/20 border border-[#72c306]/30 flex items-center justify-center">

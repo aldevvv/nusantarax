@@ -21,6 +21,7 @@ import { ImageGeneratorModule } from './image-generator/image-generator.module';
 import { CaptionGeneratorModule } from './caption-generator/caption-generator.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { ChatBotModule } from './chatbot/chatbot.module';
+import { AdminPlansModule } from './admin/admin-plans.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -57,6 +58,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     CaptionGeneratorModule,
     AiAssistantModule,
     ChatBotModule,
+    AdminPlansModule,
   ],
   controllers: [AppController],
   providers: [
