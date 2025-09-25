@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://api.nusantarax.web.id/api',
   withCredentials: true, // Important for HTTP-only cookies
+  timeout: 1800000, // 30 minutes timeout for AI operations
   headers: {
     'Content-Type': 'application/json',
   },
@@ -734,7 +735,9 @@ export const imageGeneratorAPI = {
     aspectRatio?: string;
     imageCount?: number;
   }) {
-    const response = await api.post('/image-generator/generate-template', data);
+    const response = await api.post('/image-generator/generate-template', data, {
+      timeout: 1800000, // 30 minutes for image generation
+    });
     return response.data;
   },
 
@@ -746,7 +749,9 @@ export const imageGeneratorAPI = {
     aspectRatio?: string;
     imageCount?: number;
   }) {
-    const response = await api.post('/image-generator/generate-custom', data);
+    const response = await api.post('/image-generator/generate-custom', data, {
+      timeout: 1800000, // 30 minutes for image generation
+    });
     return response.data;
   },
 
@@ -821,11 +826,13 @@ export const captionGeneratorAPI = {
     formData.append('useEmojis', data.useEmojis?.toString() || 'true');
     formData.append('useHashtags', data.useHashtags?.toString() || 'true');
     formData.append('includeBusinessInfo', data.includeBusinessInfo?.toString() || 'false');
-    
     const response = await api.post('/caption-generator/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 1800000, // 30 minutes for caption generation
+    });
+      timeout: 180000, // 3 minutes for caption generation (2 AI requests)
     });
     return response.data;
   },
@@ -883,6 +890,7 @@ export const aiAssistantAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 1800000, // 30 minutes for AI processing
     });
     return response.data;
   },
@@ -917,6 +925,12 @@ export const aiAssistantAPI = {
 
   // Get usage statistics
   async getStats() {
+    const response = await api.get('/ai-assistant/stats');
+    return response.data;
+  },
+
+  // Get usage statistics (alias for getStats)
+  async getUsageStats() {
     const response = await api.get('/ai-assistant/stats');
     return response.data;
   },
