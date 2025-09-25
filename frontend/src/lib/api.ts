@@ -826,13 +826,12 @@ export const captionGeneratorAPI = {
     formData.append('useEmojis', data.useEmojis?.toString() || 'true');
     formData.append('useHashtags', data.useHashtags?.toString() || 'true');
     formData.append('includeBusinessInfo', data.includeBusinessInfo?.toString() || 'false');
+    
     const response = await api.post('/caption-generator/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
       timeout: 1800000, // 30 minutes for caption generation
-    });
-      timeout: 180000, // 3 minutes for caption generation (2 AI requests)
     });
     return response.data;
   },
