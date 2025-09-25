@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { topupAPI, handleApiError } from '@/lib/api';
 import { toast } from 'sonner';
+import NusantaraLoadingScreen from '@/components/ui/NusantaraLoadingScreen';
 
 const PAYMENT_METHODS = [
   {
@@ -84,7 +85,7 @@ const PAYMENT_METHODS = [
   }
 ];
 
-export default function ManualTopupPage() {
+function ManualTopupClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [amount, setAmount] = useState<number>(0);
@@ -460,5 +461,13 @@ export default function ManualTopupPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function ManualTopupPage() {
+  return (
+    <Suspense fallback={<NusantaraLoadingScreen />}>
+      <ManualTopupClient />
+    </Suspense>
   );
 }
