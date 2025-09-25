@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://api.nusantarax.web.id/api',
   withCredentials: true, // Important for HTTP-only cookies
   headers: {
     'Content-Type': 'application/json',
@@ -110,12 +110,12 @@ export const authAPI = {
 
   // OAuth endpoints
   getGitHubAuthUrl(): string {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.nusantarax.web.id/api';
     return `${baseUrl}/auth/github`;
   },
 
   getGoogleAuthUrl(): string {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.nusantarax.web.id/api';
     return `${baseUrl}/auth/google`;
   },
 };

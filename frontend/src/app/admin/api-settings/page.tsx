@@ -44,7 +44,7 @@ const ApiSettingsPage = () => {
         geminiAPI.getApiKeyStatus(),
         geminiAPI.getAvailableModels(),
         geminiAPI.getUsageStats(),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/gemini/statistics`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.nusantarax.web.id/api'}/gemini/statistics`, {
           credentials: 'include'
         }).then(res => res.json())
       ]);
