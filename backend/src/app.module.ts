@@ -9,10 +9,18 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EmailModule } from './email/email.module';
 import { GeminiModule } from './gemini/gemini.module';
-import { ThumbnailModule } from './thumbnail/thumbnail.module';
-import { CaptionsModule } from './captions/captions.module';
-import { OptimizeThumbnailModule } from './optimize-thumbnail/optimize-thumbnail.module';
 import { ApiLoggerModule } from './api-logger/api-logger.module';
+import { WalletModule } from './wallet/wallet.module';
+import { BillingModule } from './billing/billing.module';
+import { TrialModule } from './trial/trial.module';
+import { TopupModule } from './topup/topup.module';
+import { MidtransModule } from './midtrans/midtrans.module';
+import { PromoModule } from './promo/promo.module';
+import { BusinessInfoModule } from './business-info/business-info.module';
+import { ImageGeneratorModule } from './image-generator/image-generator.module';
+import { CaptionGeneratorModule } from './caption-generator/caption-generator.module';
+import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
+import { ChatBotModule } from './chatbot/chatbot.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -37,10 +45,18 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     UsersModule,
     EmailModule,
     GeminiModule,
-    ThumbnailModule,
-    CaptionsModule,
-    OptimizeThumbnailModule,
     ApiLoggerModule,
+    WalletModule,
+    BillingModule,
+    TrialModule,
+    TopupModule,
+    MidtransModule,
+    PromoModule,
+    BusinessInfoModule,
+    ImageGeneratorModule,
+    CaptionGeneratorModule,
+    AiAssistantModule,
+    ChatBotModule,
   ],
   controllers: [AppController],
   providers: [

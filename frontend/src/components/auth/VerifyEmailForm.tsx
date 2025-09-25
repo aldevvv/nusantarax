@@ -4,10 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Mail, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authAPI, handleApiError } from '@/lib/api';
+import AdvancedNavbar from '@/components/layout/AdvancedNavbar';
+import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
+import NusantaraLoadingScreen from '@/components/ui/NusantaraLoadingScreen';
 
 const VerifyEmailForm = () => {
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error' | 'loading'>('loading');
@@ -95,8 +98,6 @@ const VerifyEmailForm = () => {
 
   const getStatusIcon = () => {
     switch (verificationStatus) {
-      case 'loading':
-        return <Loader2 className="h-6 w-6 text-white animate-spin" />;
       case 'success':
         return <CheckCircle className="h-6 w-6 text-white" />;
       case 'error':
@@ -132,8 +133,20 @@ const VerifyEmailForm = () => {
     }
   };
 
+  // Show full screen loading when verifying
+  if (verificationStatus === 'loading') {
+    return (
+      <NusantaraLoadingScreen
+        message="Verifying your email address"
+        showProgress={false}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-black">
+      <AdvancedNavbar />
+      <div className="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 pt-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -253,6 +266,8 @@ const VerifyEmailForm = () => {
           </div>
         </div>
       </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 };

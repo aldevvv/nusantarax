@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import NusantaraLoadingScreen from '@/components/ui/NusantaraLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -51,35 +51,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <NusantaraLoadingScreen
+        message="Authenticating"
+        showProgress={false}
+      />
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Redirecting to login...</p>
-          <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" />
-        </div>
-      </div>
+      <NusantaraLoadingScreen
+        message="Redirecting to login"
+        showProgress={false}
+      />
     );
   }
 
   if (requiredRole && user?.role !== requiredRole && !(requiredRole === 'USER' && user?.role === 'ADMIN')) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
-          <p className="text-gray-600">Redirecting...</p>
-          <Loader2 className="h-6 w-6 animate-spin mx-auto mt-4 text-blue-600" />
-        </div>
-      </div>
+      <NusantaraLoadingScreen
+        message="Access denied - Redirecting"
+        showProgress={false}
+      />
     );
   }
 

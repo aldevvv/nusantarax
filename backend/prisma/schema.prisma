@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -32,16 +33,30 @@ model User {
   // OAuth providers
   providers       UserProvider[]
   
-  // Thumbnail requests
-  thumbnailRequests ThumbnailRequest[]
-  
-  // Caption requests
-  captionRequests CaptionRequest[]
-  captionAnalytics CaptionAnalytics[]
-  
-  // Optimize requests
-  optimizeRequests OptimizeRequest[]
-  
+  // API Usage tracking
+  apiUsage        UserApiUsage[]
+  apiCallLogs     ApiCallLog[]
+
+  // SaaS Platform
+  subscription    UserSubscription?
+  wallet          UserWallet?
+  paymentHistory  PaymentHistory[]
+  trialHistory    TrialHistory[]
+  topupRequests   TopupRequest[]
+  promoUsages     TopupPromoUsage[]
+
+  // Business Information
+  businessInfo    BusinessInfo?
+
+  // Image Generator
+  imageGenerationRequests ImageGenerationRequest[]
+
+  // Caption Generator
+  captionGenerationRequests CaptionGenerationRequest[]
+
+  // AI Assistant
+  aiAssistantSession AiAssistantSession?
+
   // Timestamps
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -66,162 +81,321 @@ model UserProvider {
   @@map("user_providers")
 }
 
-model ThumbnailRequest {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+model UserApiUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Input data
-  originalFileName String?
-  originalFileSize Int?
-  originalMimeType String?
-  imageData       String?   @db.Text // Base64 encoded image (when upload flow)
-  brief           Json?
-  finalPrompt     String?   @db.Text
+  // Time period for aggregation (daily/monthly)
+  period        DateTime // Start of the period (e.g., 2024-01-01 for January)
+  periodType    PeriodType @default(DAILY) // DAILY, MONTHLY
   
-  // Processing details
-  promptId        String
-  promptText      String
-  modelUsed       String    @default("google-imagen-4.0")
+  // Usage statistics
+  totalRequests Int      @default(0) // Total API requests made
+  totalTokens   Int      @default(0) // Total tokens consumed (input + output)
+  inputTokens   Int      @default(0) // Total input tokens
+  outputTokens  Int      @default(0) // Total output tokens
   
-  // Results
-  status          RequestStatus @default(PROCESSING)
-  results         ThumbnailResult[]
+  // Request breakdown by endpoint
+  geminiGenerate    Int  @default(0) // Calls to /gemini/generate
+  geminiAnalyze     Int  @default(0) // Calls to /gemini/analyze
+  geminiChat        Int  @default(0) // Calls to /gemini/chat
   
-  // Performance metrics
-  processingTime  Int?      // milliseconds
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  // Model usage breakdown
+  geminiPro         Int  @default(0) // gemini-2.0-flash-thinking-exp
+  geminiFlash       Int  @default(0) // gemini-2.0-flash-exp
+  geminiVision      Int  @default(0) // gemini-2.0-flash-image-exp
   
-  @@map("thumbnail_requests")
+  // SaaS tracking
+  subscriptionPlanId String?  // Which plan user was on during this period
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+  
+  // Limits tracking
+  requestsLimit     Int?     // Plan limit during this period
+  limitExceeded     Boolean  @default(false) // Did user exceed limit?
+  blockedRequests   Int      @default(0) // Requests blocked due to limit
+  
+  // Cost tracking (if implementing per-request billing later)
+  estimatedCost     Float    @default(0.0) // Estimated cost in IDR
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, period, periodType])
+  @@index([subscriptionPlanId])
+  @@map("user_api_usage")
 }
 
-model ThumbnailResult {
-  id           String           @id @default(cuid())
-  requestId    String
-  request      ThumbnailRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  
-  // Result data
-  promptVariation String          // Specific prompt used for this result
-  resultText     String   @db.Text // Generated description/instructions
-  imageUrl       String?          // URL of generated thumbnail image in storage
-  resultOrder    Int              // 1, 2, or 3
-  
-  createdAt      DateTime @default(now())
-  
-  @@map("thumbnail_results")
-}
-
-model CaptionRequest {
+model SubscriptionPlan {
   id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
   
-  // Input data
-  originalFileName String
-  originalFileSize Int
-  originalMimeType String
-  imageData       String   @db.Text // Base64 encoded image
+  // Plan details
+  name            String   @unique // FREE, BASIC, PRO, ENTERPRISE
+  displayName     String   // "Free Plan", "Basic Plan", etc.
+  description     String?  @db.Text
   
-  // AI Analysis results
-  productAnalysis Json     // Structured product intelligence
-  targetAudience  String?
-  brandTone       String?
-  productCategory String?
-  keyFeatures     String[] // Array of detected features
+  // Limits and features
+  monthlyRequests Int      // 50, 750, 5000, -1 (unlimited)
   
-  // Processing details
-  platforms       Platform[] // Selected platforms for generation
-  formats         CaptionFormat[] // Selected formats
-  modelUsed       String   @default("gemini-2.0-flash")
+  // Pricing in IDR (Indonesian Rupiah)
+  monthlyPrice    Int      @default(0) // Price in IDR (e.g., 99000 = Rp99,000)
+  yearlyPrice     Int      @default(0) // Yearly price in IDR
   
-  // Status and performance
-  status          RequestStatus @default(PROCESSING)
-  processingTime  Int?     // milliseconds
-  errorMessage    String?
+  // Plan settings
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0) // For display ordering
   
-  // Results and analytics
-  captions        CaptionResult[]
-  totalVariations Int      @default(0)
-  bestPerformer   String?  // ID of best performing caption
+  // Trial eligibility (managed by admin through TrialConfiguration)
+  trialDays       Int      @default(0) // Default 0 - admin sets via TrialConfiguration
+  
+  // Relationships
+  subscriptions   UserSubscription[]
+  trialConfigs    TrialConfiguration[]
+  paymentHistory  PaymentHistory[]
+  trialHistory    TrialHistory[]
+  userApiUsage    UserApiUsage[]
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  @@map("caption_requests")
+  @@map("subscription_plans")
 }
 
-model CaptionResult {
-  id           String         @id @default(cuid())
-  requestId    String
-  request      CaptionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+model UserSubscription {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Platform and format
-  platform     Platform
-  format       CaptionFormat
-  version      Int            // 1, 2, 3 for A/B testing variations
+  // Current plan
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
   
-  // Content
-  caption      String         @db.Text
-  hashtags     String[]       // Array of hashtags
-  callToAction String?
-  characterCount Int
+  // Subscription period
+  billingCycle    BillingCycle @default(MONTHLY) // MONTHLY, YEARLY
+  status          SubscriptionStatus @default(ACTIVE)
   
-  // AI Predictions
-  engagementScore    Int      @default(0) // 1-100 predicted engagement
-  viralPotential     Int      @default(0) // 1-100 viral prediction
-  conversionScore    Int      @default(0) // 1-100 conversion prediction
-  audienceMatch      Int      @default(0) // 1-100 audience alignment
-  overallScore       Int      @default(0) // Weighted combination score
+  // Period tracking
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
   
-  // Performance tracking (for future actual data)
-  actualViews       Int?     @default(0)
-  actualEngagement  Int?     @default(0)
-  actualConversions Int?     @default(0)
-  actualROI         Float?   // Return on investment
+  // Usage tracking for current period
+  requestsUsed    Int      @default(0)
+  requestsLimit   Int      // Cached from plan for performance
   
-  // Recommendations
-  strengths         String[] // What makes this caption strong
-  improvements      String[] // Suggested optimizations
-  riskFactors       String[] // Potential issues
+  // Trial tracking
+  isTrialActive   Boolean  @default(false)
+  trialStartDate  DateTime?
+  trialEndDate    DateTime?
+  hasUsedTrial    Boolean  @default(false) // Prevents multiple trials
   
-  createdAt    DateTime @default(now())
+  // Subscription lifecycle
+  autoRenew       Boolean  @default(true)
+  cancelAtPeriodEnd Boolean @default(false)
+  canceledAt      DateTime?
   
-  @@map("caption_results")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("user_subscriptions")
 }
 
-model CaptionAnalytics {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+model UserWallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Analytics period
-  platform    Platform
-  period      DateTime // Month/week aggregation key
+  // Balance in IDR
+  balance         Int      @default(0)
   
-  // Performance metrics
-  totalCaptions     Int   @default(0)
-  totalViews        Int   @default(0)
-  totalEngagement   Int   @default(0)
-  totalConversions  Int   @default(0)
+  // Tracking
+  totalDeposited  Int      @default(0) // Lifetime deposits
+  totalSpent      Int      @default(0) // Lifetime spending
   
-  // ROI calculations
-  averageROI        Float?  // Return on investment
-  bestPerformingTone String? // "professional", "casual", etc.
-  optimalLength     Int?    // Character count sweet spot
-  topHashtags       String[] // Best performing hashtags
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
-  // Insights
-  trendingTopics    String[] // Current trending elements
-  audienceInsights  Json?    // Detailed audience analysis
-  competitorData    Json?    // Competitive intelligence
+  @@map("user_wallets")
+}
+
+model PaymentHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Payment details
+  type            PaymentType
+  amount          Int      // Amount in IDR
+  description     String   // "Monthly subscription", "Wallet top-up", etc.
   
-  @@unique([userId, platform, period])
-  @@map("caption_analytics")
+  // Related entities
+  planId          String?  // If subscription payment
+  plan            SubscriptionPlan? @relation(fields: [planId], references: [id])
+  
+  // Payment tracking
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?  // "manual_admin", "stripe", "paypal", etc.
+  externalId      String?  // External payment processor ID
+  
+  // Admin actions
+  processedBy     String?  // Admin user ID who processed manual payment
+  notes           String?  @db.Text
+  
+  // Topup relations
+  topupRequest    TopupRequest?
+  promoUsages     TopupPromoUsage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("payment_history")
+}
+
+model TopupRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Request details
+  amount          Int      // Amount in IDR
+  paymentMethod   String   // QRIS, SeaBank, AlloBank, BLU_BCA, GOPAY, DANA
+  proofImageUrl   String?  // Supabase storage URL
+  
+  // Status tracking
+  status          TopupRequestStatus @default(PENDING)
+  
+  // Admin processing
+  reviewedBy      String?  // Admin user ID
+  reviewNotes     String?  @db.Text
+  reviewedAt      DateTime?
+  
+  // Payment tracking
+  paymentHistoryId String? @unique
+  paymentHistory  PaymentHistory? @relation(fields: [paymentHistoryId], references: [id])
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("topup_requests")
+}
+
+model PromoCode {
+  id              String   @id @default(cuid())
+  
+  // Code details
+  code            String   @unique // WELCOME10, FIRST50K, etc.
+  name            String   // Display name
+  description     String?  @db.Text
+  
+  // Discount settings
+  discountType    DiscountType @default(PERCENTAGE) // PERCENTAGE, FIXED
+  discountValue   Int      // 10 (for 10%) or 5000 (for Rp5000)
+  
+  // Usage limits
+  maxUsage        Int      @default(-1) // -1 = unlimited total usage
+  currentUsage    Int      @default(0)
+  maxUsagePerUser Int      @default(1)  // How many times each user can use
+  maxTotalUsers   Int      @default(-1) // -1 = unlimited users can use this code
+  currentUsers    Int      @default(0)  // How many unique users have used this
+  
+  // Applicability
+  applicableFor   PromoApplicableFor @default(TOPUP) // TOPUP, PLAN, BOTH
+  
+  // Validity
+  isActive        Boolean  @default(true)
+  validFrom       DateTime
+  validUntil      DateTime
+  
+  // Conditions
+  minAmount       Int      @default(0) // Minimum topup amount
+  maxDiscount     Int?     // Maximum discount amount (for percentage)
+  
+  // Admin
+  createdBy       String   // Admin user ID
+  
+  // Relations
+  topupTransactions TopupPromoUsage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("promo_codes")
+}
+
+model TopupPromoUsage {
+  id              String   @id @default(cuid())
+  userId          String
+  promoCodeId     String
+  paymentHistoryId String
+  
+  discountAmount  Int      // Actual discount applied
+  
+  user            User     @relation(fields: [userId], references: [id])
+  promoCode       PromoCode @relation(fields: [promoCodeId], references: [id])
+  paymentHistory  PaymentHistory @relation(fields: [paymentHistoryId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  
+  @@unique([userId, promoCodeId, paymentHistoryId])
+  @@map("topup_promo_usage")
+}
+
+model TrialConfiguration {
+  id              String   @id @default(cuid())
+  
+  // Trial plan
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  // Trial settings
+  isActive        Boolean  @default(false)
+  trialDays       Int      @default(7)
+  maxTrialUsers   Int      @default(100) // Max users who can use this trial
+  currentTrialUsers Int    @default(0)   // Current count
+  
+  // Validity period
+  validFrom       DateTime
+  validUntil      DateTime
+  
+  // Admin settings
+  createdBy       String   // Admin user ID
+  description     String?  @db.Text
+  
+  // Relationships
+  trialHistory    TrialHistory[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("trial_configurations")
+}
+
+model TrialHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Trial details
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  trialConfigId   String?  // Reference to trial configuration used
+  trialConfig     TrialConfiguration? @relation(fields: [trialConfigId], references: [id])
+  
+  // Trial period
+  startDate       DateTime
+  endDate         DateTime
+  status          TrialStatus @default(ACTIVE)
+  
+  // Outcome
+  convertedToPaid Boolean  @default(false)
+  conversionDate  DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("trial_history")
 }
 
 model ApiCallLog {
@@ -243,13 +417,22 @@ model ApiCallLog {
   errorMessage  String?   @db.Text
   errorCode     String?
   
+  // User tracking (required for SaaS)
+  userId        String    // Required: track per user for billing
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Subscription tracking for limits
+  subscriptionId String?  // Link to user's subscription at time of request
+  requestsRemaining Int?  // Remaining requests after this call
+  
   // Additional metadata
-  userId        String?   // Optional: track per user
   requestSize   Int?      // Request payload size in bytes
   responseSize  Int?      // Response size in bytes
   
   createdAt     DateTime  @default(now())
   
+  @@index([userId, createdAt])
+  @@index([subscriptionId])
   @@map("api_call_logs")
 }
 
@@ -264,81 +447,42 @@ enum Provider {
   GOOGLE
 }
 
-enum Platform {
-  FACEBOOK
-  INSTAGRAM
-  TIKTOK
+enum PeriodType {
+  DAILY
+  MONTHLY
 }
 
-enum CaptionFormat {
-  SHORT
-  MEDIUM
-  LONG
-  SHORT_NO_HASHTAGS
-  MEDIUM_NO_HASHTAGS
-  LONG_NO_HASHTAGS
+enum BillingCycle {
+  MONTHLY
+  YEARLY
 }
 
-enum RequestStatus {
-  PROCESSING
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  SUSPENDED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  WALLET_TOPUP
+  REFUND
+  DEDUCTION
+}
+
+enum PaymentStatus {
+  PENDING
   COMPLETED
   FAILED
+  REFUNDED
 }
 
-model OptimizeRequest {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  
-  // Input data
-  originalFileName String
-  originalFileSize Int
-  originalMimeType String
-  imageData       String    @db.Text // Base64 encoded original image
-  
-  // Processing settings
-  templateId      String    // Template selection (e.g., "social-media", "ecommerce", "catalog")
-  templateName    String    // Human readable template name
-  optimizations   Json      // Optimization settings (cropping, lighting, etc.)
-  exportFormats   String[]  // Requested formats: ["JPG", "PNG", "WEBP"]
-  
-  // AI processing
-  modelUsed       String    @default("gemini-2.5-flash-image-preview")
-  finalPrompt     String?   @db.Text // Gemini prompt for optimization
-  
-  // Results
-  status          RequestStatus @default(PROCESSING)
-  results         OptimizeResult[]
-  
-  // Performance metrics
-  processingTime  Int?      // milliseconds
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  @@map("optimize_requests")
-}
-
-model OptimizeResult {
-  id           String          @id @default(cuid())
-  requestId    String
-  request      OptimizeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  
-  // Result data
-  templateUsed   String        // Template applied
-  format         String        // Output format (JPG, PNG, WEBP)
-  imageUrl       String        // URL of optimized image in storage
-  fileSize       Int           // Optimized file size in bytes
-  dimensions     Json          // {width: number, height: number}
-  
-  // Optimization details
-  optimizationsApplied Json    // List of optimizations applied
-  qualityScore     Int?        // 1-100 quality assessment
-  improvementNotes String[]    // What was improved
-  
-  createdAt      DateTime @default(now())
-  
-  @@map("optimize_results")
+enum TrialStatus {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELED
 }
 
 enum ApiCallStatus {
@@ -347,3 +491,399 @@ enum ApiCallStatus {
   TIMEOUT
   RATE_LIMITED
 }
+
+enum TopupRequestStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PromoApplicableFor {
+  TOPUP
+  PLAN
+  BOTH
+}
+
+model BusinessInfo {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Business Details
+  businessName    String
+  description     String?  @db.Text
+  category        String   // e.g., "Food & Beverage", "Fashion", "Technology"
+  subCategory     String?  // More specific category
+  
+  // Brand Identity
+  brandColors     Json     // ["#72c306", "#8fd428", "#ffffff"] - multiple colors
+  logoUrl         String?  // Supabase storage URL
+  
+  // Business Details for AI Context
+  industry        String?  // "Retail", "Services", "Manufacturing", etc.
+  businessModel   String?  // "B2C", "B2B", "B2B2C", "Marketplace"
+  targetAudience  String?  @db.Text // "Young professionals aged 25-35"
+  businessSize    BusinessSize @default(MICRO) // MICRO, SMALL, MEDIUM, LARGE
+  establishedYear Int?     // Year business was established
+  
+  // Products/Services (AI Context)
+  mainProducts    Json?    // ["Product 1", "Product 2"] - array of main products
+  keyServices     Json?    // ["Service 1", "Service 2"] - array of key services
+  brandVoice      String?  // "Professional", "Casual", "Friendly", "Authoritative"
+  brandPersonality Json?  // ["Innovative", "Trustworthy", "Creative"] - brand traits
+  
+  // Contact & Location (Optional)
+  address         String?
+  city            String?
+  region          String?  // Province/State
+  postalCode      String?
+  website         String?
+  phoneNumber     String?
+  
+  // Social Media (Optional)
+  socialMedia     Json?    // {"instagram": "@username", "facebook": "page", "tiktok": "@username"}
+  
+  // Business Goals for AI (Optional)
+  businessGoals   Json?    // ["Increase sales", "Build brand awareness", "Expand market"]
+  marketingFocus  Json?    // ["Social media", "Content marketing", "SEO"]
+  
+  // AI Generation Preferences
+  contentTone     String?  // "Professional", "Casual", "Humorous", "Educational"
+  preferredLanguage String @default("id") // "id", "en" - for AI generation
+  
+  // Completion tracking
+  completedAt     DateTime? // When business info was fully completed
+  isCompleted     Boolean  @default(false) // Helper field for quick queries
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("business_info")
+}
+
+// Image Generator Models
+model ImageTemplate {
+  id            String   @id @default(cuid())
+  name          String   // "Food Product Showcase"
+  description   String?  @db.Text
+  category      String   // "Food & Beverage"
+  subCategory   String   // "Makanan Tradisional", "Kue & Dessert"
+  promptTemplate String  @db.Text // Base prompt template
+  requiredFields Json    // Field definitions
+  exampleImage  String?  // Preview image URL
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  requests      ImageGenerationRequest[]
+  
+  @@map("image_templates")
+}
+
+model ImageGenerationRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  // Request details
+  requestId       String   @unique // For tracking
+  type            ImageRequestType @default(CUSTOM) // TEMPLATE, CUSTOM
+  templateId      String?  // If using template
+  template        ImageTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Input data
+  originalPrompt  String   @db.Text // User input
+  enhancedPrompt  String   @db.Text // After Gemini 2.5 Pro analysis
+  inputFields     Json?    // Template field values
+  includeBusinessInfo Boolean @default(false)
+  businessContext String?  @db.Text // Business info included
+  
+  // Generation settings
+  style          String?  // Modern, Vintage, Minimalis
+  backgroundPreference String? // White, Transparent, Colorful
+  
+  // AI Model tracking
+  analysisModel  String?  // gemini-2.5-pro model used
+  generationModel String? // imagen-4.0 or specific model
+  
+  // Token usage
+  analysisInputTokens  Int?
+  analysisOutputTokens Int?
+  analysisTokens       Int? // Total for analysis
+  generationTokens     Int? // Imagen generation cost
+  totalTokens          Int? // Combined cost
+  
+  // Status tracking
+  status         ImageRequestStatus @default(PROCESSING)
+  errorMessage   String?  @db.Text
+  
+  // Results
+  totalImages    Int      @default(0) // Should be 3
+  results        ImageGenerationResult[]
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@index([status])
+  @@map("image_generation_requests")
+}
+
+model ImageGenerationResult {
+  id              String   @id @default(cuid())
+  requestId       String
+  request         ImageGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Image details
+  imageUrl        String   // Supabase storage URL
+  imageSize       String?  // "1024x1024"
+  fileSize        Int?     // File size in bytes
+  fileName        String   // Storage file name
+  
+  // Generation metadata
+  prompt          String   @db.Text // Final prompt used
+  seed            String?  // If available from Imagen
+  generationTime  Int?     // Generation time in ms
+  
+  // Quality/ranking
+  order           Int      @default(1) // 1, 2, 3 for the 3 generated images
+  isDeleted       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([requestId, order])
+  @@map("image_generation_results")
+}
+
+enum ImageRequestType {
+  TEMPLATE
+  CUSTOM
+}
+
+enum ImageRequestStatus {
+  PROCESSING
+  ANALYZING
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+enum BusinessSize {
+  MICRO     // < 10 employees, revenue < 300M IDR
+  SMALL     // 10-50 employees, revenue 300M-2.5B IDR
+  MEDIUM    // 50-250 employees, revenue 2.5B-50B IDR
+  LARGE     // > 250 employees, revenue > 50B IDR
+}
+
+// Caption Generator Models
+model CaptionGenerationRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  // Request details
+  requestId       String   @unique // For tracking
+  imageUrl        String   // caption-generator-images bucket
+  imageFileName   String   // Original filename
+  
+  // User preferences
+  captionIdea     String?  // Optional user input
+  platform        CaptionPlatform // FACEBOOK, INSTAGRAM, TIKTOK
+  targetAudience  String?  // User defined target audience
+  tone            CaptionTone // PROFESSIONAL, CASUAL, etc.
+  captionLength   CaptionLength // SHORT, MEDIUM, LONG
+  language        CaptionLanguage @default(EN) // Output language preference
+  useEmojis       Boolean  @default(true)  // User choice for emojis
+  useHashtags     Boolean  @default(true)  // User choice for hashtags
+  includeBusinessInfo Boolean @default(false)
+  
+  // AI processing tracking
+  businessContext String?  @db.Text // Business info included
+  imageAnalysisPrompt String? @db.Text // Prompt used for image analysis
+  captionAnalysisPrompt String? @db.Text // Prompt used for caption analysis
+  
+  // AI Model tracking
+  analysisModel   String?  // gemini-2.5-pro model used
+  
+  // Token usage (2 main requests)
+  imageAnalysisInputTokens  Int?
+  imageAnalysisOutputTokens Int?
+  captionAnalysisInputTokens Int?
+  captionAnalysisOutputTokens Int?
+  totalTokens     Int? // Combined usage
+  
+  // Status tracking
+  status         CaptionRequestStatus @default(PROCESSING)
+  errorMessage   String?  @db.Text
+  
+  // Results
+  totalCaptions  Int      @default(0) // Should be 3
+  results        CaptionGenerationResult[]
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@index([status])
+  @@map("caption_generation_requests")
+}
+
+model CaptionGenerationResult {
+  id              String   @id @default(cuid())
+  requestId       String
+  request         CaptionGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Caption content
+  captionText     String   @db.Text // The generated caption
+  hashtags        String?  @db.Text // Platform-specific hashtags
+  platform        CaptionPlatform // FACEBOOK, INSTAGRAM, TIKTOK
+  characterCount  Int      // Caption length
+  hashtagCount    Int      @default(0) // Number of hashtags
+  order           Int      @default(1) // 1, 2, 3 for the 3 variations
+  
+  // Enhanced 6-Metric Analysis (7-10 scores, positive only)
+  engagementScore     Int? // Overall engagement prediction (7-10)
+  readabilityScore    Int? // How easy to read (7-10)
+  ctaStrength         Int? // Call-to-Action effectiveness (7-10)
+  brandVoiceScore     Int? // Brand consistency (7-10)
+  trendingPotential   Int? // Trending likelihood (7-10)
+  emotionalImpact     Int? // Emotional connection (7-10)
+  hookEffectiveness   Int? // Opening strength (7-10)
+  
+  // Platform optimization
+  platformOptimization Int? // How well optimized for platform (7-10)
+  keywordRelevance    Int? // Keyword matching (7-10)
+  viralityPotential   String? // "HIGH" | "VERY HIGH"
+  
+  // Analysis details (JSON)
+  analysisDetails     Json? // Detailed positive insights
+  
+  // Metadata
+  isDeleted       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  
+  @@index([requestId, order])
+  @@map("caption_generation_results")
+}
+
+// Caption Generator Enums
+enum CaptionPlatform {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+}
+
+enum CaptionTone {
+  PROFESSIONAL
+  CASUAL
+  FUNNY
+  INSPIRING
+  SALES
+  EDUCATIONAL
+  STORYTELLING
+}
+
+enum CaptionLength {
+  SHORT   // 50-100 characters
+  MEDIUM  // 150-250 characters
+  LONG    // 350+ characters
+}
+
+enum CaptionLanguage {
+  EN      // English
+  ID      // Bahasa Indonesia
+}
+
+enum CaptionRequestStatus {
+  PROCESSING          // Initial upload
+  ANALYZING_IMAGE     // Step 1: Image analysis
+  GENERATING_CAPTIONS // Step 1: Caption generation
+  ANALYZING_CAPTIONS  // Step 2: Caption analysis
+  COMPLETED
+  FAILED
+}
+
+// AI Assistant Models
+model AiAssistantSession {
+  id              String   @id @default(cuid())
+  userId          String   @unique // One session per user
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Session metadata
+  title           String   @default("NusantaraX AI Chat")
+  isActive        Boolean  @default(true)
+  
+  // Context configuration
+  globalContext   String?  @db.Text // User's saved context
+  lastContextUpdate DateTime?
+  
+  // Usage statistics (token-only)
+  totalMessages   Int      @default(0)
+  totalInputTokens Int     @default(0)
+  totalOutputTokens Int    @default(0)
+  totalTokens     Int      @default(0)
+  
+  // Relations
+  messages        AiAssistantMessage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastActivityAt  DateTime @default(now())
+  
+  @@map("ai_assistant_sessions")
+}
+
+model AiAssistantMessage {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         AiAssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Message details
+  role            MessageRole @default(USER) // USER, ASSISTANT, SYSTEM
+  content         String   @db.Text
+  
+  // Image attachment (cache only)
+  imageUrl        String?  // Temporary Supabase URL
+  imageName       String?  // Original filename
+  imageExpiry     DateTime? // 24h TTL
+  
+  // AI Processing metadata
+  modelUsed       String?  // gemini-2.5-pro
+  processingTime  Int?     // Response time in ms
+  
+  // Token usage (this message only)
+  inputTokens     Int?     // User input tokens
+  outputTokens    Int?     // AI response tokens
+  totalTokens     Int?     // Combined tokens
+  
+  // Message metadata
+  isDeleted       Boolean  @default(false)
+  hasError        Boolean  @default(false)
+  errorMessage    String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([sessionId, createdAt])
+  @@map("ai_assistant_messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+

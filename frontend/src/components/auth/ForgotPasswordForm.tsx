@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ForgotPasswordData } from '@/types/auth.types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import AdvancedNavbar from '@/components/layout/AdvancedNavbar';
+import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
 
 const ForgotPasswordForm = () => {
@@ -76,7 +78,9 @@ const ForgotPasswordForm = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-black">
+        <AdvancedNavbar />
+        <div className="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 pt-32">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -114,12 +118,16 @@ const ForgotPasswordForm = () => {
             </div>
           </div>
         </motion.div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-black">
+      <AdvancedNavbar />
+      <div className="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 pt-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -184,6 +192,8 @@ const ForgotPasswordForm = () => {
           </form>
         </div>
       </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import OAuthSuccessHandler from '@/components/auth/OAuthSuccessHandler';
+import FloatingAIAssistant from '@/components/ui/FloatingAIAssistant';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,13 +41,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Header onToggleSidebar={toggleSidebar} />
           
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto bg-black">
-            <div className="p-6">
+          <main className="flex-1 overflow-y-auto bg-black flex flex-col">
+            <div className="p-6 min-h-full flex flex-col">
               {children}
             </div>
           </main>
         </div>
       </div>
+      
+      {/* Floating AI Assistant */}
+      <FloatingAIAssistant />
     </ProtectedRoute>
   );
 };

@@ -61,7 +61,8 @@ export class UsersController {
         data: stats,
       };
     } catch (error) {
-      throw new BadRequestException('Failed to fetch user statistics');
+      console.error('Error fetching user stats:', error);
+      throw new BadRequestException(`Failed to fetch user statistics: ${error.message}`);
     }
   }
 

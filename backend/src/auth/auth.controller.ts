@@ -92,6 +92,40 @@ export class AuthController {
     };
   }
 
+  @Get('session')
+  async getSession(@Req() req: Request) {
+    // Extract JWT token from cookies
+    const token = req.cookies?.access_token;
+    if (!token) {
+      return {
+        success: false,
+        message: 'No session found',
+      };
+    }
+
+    try {
+      // Decode JWT to get expiration
+      const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      const expirationTime = decoded.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      const remainingTime = Math.max(0, Math.floor((expirationTime - currentTime) / 1000)); // In seconds
+
+      return {
+        success: true,
+        data: {
+          expiresAt: expirationTime,
+          remainingSeconds: remainingTime,
+          isExpired: remainingTime <= 0,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Invalid session',
+      };
+    }
+  }
+
   @Get('refresh')
   async refresh(
     @CurrentUser() user: AuthenticatedUser,

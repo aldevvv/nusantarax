@@ -41,7 +41,45 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-}
+  --animate-shine: shine var(--duration) infinite linear;
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;
+    }
+  50% {
+    background-position: 100% 100%;
+    }
+  to {
+    background-position: 0% 0%;
+    }
+  }
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear
+;
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);}}
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);}
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);}
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);}
+  100% {
+    transform: translateZ(0) rotate(360deg);}}
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);}}
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);}
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);}
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);}
+  100% {
+    transform: translateZ(0) rotate(360deg);}}}
 
 :root {
   --radius: 0.625rem;
@@ -76,6 +114,15 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+/* Hide scrollbar for chatbot messages area */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
 }
 
 .dark {
@@ -146,52 +193,189 @@
   background-color: rgb(75, 85, 99) !important;
 }
 
-/* Custom scrollbar styles - hide scrollbars but maintain functionality */
-/* Hide scrollbars for webkit browsers (Chrome, Safari, etc.) */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+/* Select dropdown hover styles */
+[data-slot="select-item"]:hover,
+[data-slot="select-item"]:focus {
+  color: white !important;
 }
 
-/* Hide scrollbars for Firefox */
-.hide-scrollbar {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+[data-slot="select-item"]:hover * {
+  color: white !important;
 }
 
-/* Apply to body to hide main scrollbars */
+[data-slot="select-item"]:focus * {
+  color: white !important;
+}
+
+/* Hide main body scrollbars */
 html, body {
   overflow-x: hidden;
-}
-
-body {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 body::-webkit-scrollbar {
   display: none;
 }
 
-/* Make sidebar scrollable without visible scrollbar */
+/* Hide scrollbars for specific elements that need it */
+.hide-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Sidebar scrollable - only show when needed and hide scrollbars */
 .sidebar-scrollable {
-  overflow-y: auto;
-  overflow-x: hidden;
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 .sidebar-scrollable::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  background: transparent !important;
 }
 
-/* Hide all scrollbars globally */
-* {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+/* Ensure sidebar elements don't get green scrollbars */
+.sidebar-scrollable,
+.sidebar-scrollable *,
+nav.sidebar-scrollable,
+nav.sidebar-scrollable *,
+aside .sidebar-scrollable,
+aside .sidebar-scrollable * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-*::-webkit-scrollbar {
-  display: none;
+.sidebar-scrollable::-webkit-scrollbar,
+.sidebar-scrollable *::-webkit-scrollbar,
+nav.sidebar-scrollable::-webkit-scrollbar,
+nav.sidebar-scrollable *::-webkit-scrollbar,
+aside .sidebar-scrollable::-webkit-scrollbar,
+aside .sidebar-scrollable *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
 }
 
+/* Chat interface with visible scrollbars ONLY when needed */
+.chat-scrollable, .chat-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: #72c306 #1f2937 !important;
+  overflow-y: auto !important;
+}
 
+.chat-scrollable::-webkit-scrollbar, .chat-scroll::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.chat-scrollable::-webkit-scrollbar-track, .chat-scroll::-webkit-scrollbar-track {
+  background: #1f2937 !important;
+  border-radius: 4px !important;
+}
+
+.chat-scrollable::-webkit-scrollbar-thumb, .chat-scroll::-webkit-scrollbar-thumb {
+  background: #72c306 !important;
+  border-radius: 4px !important;
+}
+
+.chat-scrollable::-webkit-scrollbar-thumb:hover, .chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8fd428 !important;
+}
+
+.chat-scrollable::-webkit-scrollbar-corner, .chat-scroll::-webkit-scrollbar-corner {
+  background: #1f2937 !important;
+}
+
+/* Configuration/Statistics tabs - visible scrollbars with same green styling as chat when needed */
+.config-scrollable {
+  scrollbar-width: thin !important;
+  scrollbar-color: #72c306 #1f2937 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.config-scrollable::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.config-scrollable::-webkit-scrollbar-track {
+  background: #1f2937 !important;
+  border-radius: 4px !important;
+}
+
+.config-scrollable::-webkit-scrollbar-thumb {
+  background: #72c306 !important;
+  border-radius: 4px !important;
+}
+
+.config-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #8fd428 !important;
+}
+
+.config-scrollable::-webkit-scrollbar-corner {
+  background: #1f2937 !important;
+}
+
+/* Ensure other elements can scroll but hide scrollbars */
+.hide-scrollbar {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* GREEN SCROLLBAR for main content areas */
+main, section, article, .main-content, .content,
+[data-state="active"]:not(.sidebar-scrollable),
+.tab-content:not(.sidebar-scrollable),
+.scrollable-content:not(.sidebar-scrollable) {
+  scrollbar-width: thin !important;
+  scrollbar-color: #72c306 #1f2937 !important;
+}
+
+main::-webkit-scrollbar, section::-webkit-scrollbar, article::-webkit-scrollbar,
+.main-content::-webkit-scrollbar, .content::-webkit-scrollbar,
+[data-state="active"]:not(.sidebar-scrollable)::-webkit-scrollbar,
+.tab-content:not(.sidebar-scrollable)::-webkit-scrollbar,
+.scrollable-content:not(.sidebar-scrollable)::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+main::-webkit-scrollbar-track, section::-webkit-scrollbar-track, article::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track, .content::-webkit-scrollbar-track,
+[data-state="active"]:not(.sidebar-scrollable)::-webkit-scrollbar-track,
+.tab-content:not(.sidebar-scrollable)::-webkit-scrollbar-track,
+.scrollable-content:not(.sidebar-scrollable)::-webkit-scrollbar-track {
+  background: #1f2937 !important;
+  border-radius: 4px !important;
+}
+
+main::-webkit-scrollbar-thumb, section::-webkit-scrollbar-thumb, article::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb,
+[data-state="active"]:not(.sidebar-scrollable)::-webkit-scrollbar-thumb,
+.tab-content:not(.sidebar-scrollable)::-webkit-scrollbar-thumb,
+.scrollable-content:not(.sidebar-scrollable)::-webkit-scrollbar-thumb {
+  background: #72c306 !important;
+  border-radius: 4px !important;
+}
+
+main::-webkit-scrollbar-thumb:hover, section::-webkit-scrollbar-thumb:hover, article::-webkit-scrollbar-thumb:hover,
+.main-content::-webkit-scrollbar-thumb:hover, .content::-webkit-scrollbar-thumb:hover,
+[data-state="active"]:not(.sidebar-scrollable)::-webkit-scrollbar-thumb:hover,
+.tab-content:not(.sidebar-scrollable)::-webkit-scrollbar-thumb:hover,
+.scrollable-content:not(.sidebar-scrollable)::-webkit-scrollbar-thumb:hover {
+  background: #8fd428 !important;
+}

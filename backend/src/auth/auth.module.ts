@@ -20,7 +20,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRY', '15m'),
+          expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRY', '1h'),
           issuer: 'nusantarax-api',
           audience: 'nusantarax-app',
         },

@@ -1,0 +1,66 @@
+# Root level gitignore for NusantaraX monorepo
+
+# Deployment and configuration files
+Deployment Guide.md
+deployment-guide.md
+DEPLOYMENT.md
+
+# Environment files (backup protection)
+.env
+.env.*
+*.env
+
+# Sensitive configuration files
+config.json
+secrets.json
+credentials.json
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+.tmp/
+.temp/
+temp/
+tmp/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# System files
+*.pid
+*.lock
+
+# Documentation drafts (keep only final docs)
+NOTES.md
+TODO.md
+DRAFT*.md
+
+# Local testing files
+test-local/
+local-test/

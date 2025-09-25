@@ -22,6 +22,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import NusantaraLoadingScreen from '@/components/ui/NusantaraLoadingScreen';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -254,7 +255,7 @@ const UserManagementPage = () => {
                 <Users className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#72c306] to-[#8fd428] bg-clip-text text-transparent">User Management</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#72c306] to-[#8fd428] bg-clip-text text-transparent">Manage Users</h1>
                 <p className="text-gray-400">Manage user accounts, roles, and permissions</p>
               </div>
             </div>
@@ -268,8 +269,63 @@ const UserManagementPage = () => {
           </div>
         </motion.div>
 
+        {/* KPI Cards */}
+        <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          {/* Total Users */}
+          <div className="bg-black border border-[#72c306]/30 rounded-lg p-6 shadow-lg shadow-[#72c306]/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Total Users</p>
+                <p className="text-2xl font-bold text-white">{pagination.total || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-r from-[#72c306] to-[#8fd428] rounded-lg flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Verified Users */}
+          <div className="bg-black border border-[#72c306]/30 rounded-lg p-6 shadow-lg shadow-[#72c306]/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Verified Users</p>
+                <p className="text-2xl font-bold text-white">{stats.verified || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Admin Users */}
+          <div className="bg-black border border-[#72c306]/30 rounded-lg p-6 shadow-lg shadow-[#72c306]/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Admin Users</p>
+                <p className="text-2xl font-bold text-white">{stats.admins || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Users */}
+          <div className="bg-black border border-[#72c306]/30 rounded-lg p-6 shadow-lg shadow-[#72c306]/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Pending Users</p>
+                <p className="text-2xl font-bold text-white">{stats.unverified || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Filters and Search */}
-        <motion.div variants={fadeInUp} className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <motion.div variants={fadeInUp} className="bg-black border border-[#72c306]/30 rounded-lg shadow-lg shadow-[#72c306]/10 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -279,7 +335,7 @@ const UserManagementPage = () => {
                   placeholder="Search users by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#72c306] focus:border-[#72c306] text-white placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-2 bg-black border border-[#72c306]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#72c306] focus:border-[#72c306] text-white placeholder-gray-400"
                 />
               </div>
             </div>
@@ -289,7 +345,7 @@ const UserManagementPage = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as 'ALL' | 'USER' | 'ADMIN')}
-                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#72c306] focus:border-[#72c306] text-white"
+                className="px-3 py-2 bg-black border border-[#72c306]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#72c306] focus:border-[#72c306] text-white"
               >
                 <option value="ALL">All Roles</option>
                 <option value="USER">Users</option>
@@ -297,17 +353,11 @@ const UserManagementPage = () => {
               </select>
             </div>
           </div>
-          
-          <div className="mt-4 flex items-center space-x-6 text-sm text-gray-400">
-            <span>Total Users: {pagination.total}</span>
-            <span>Active: {stats.verified || 0}</span>
-            <span>Pending: {stats.unverified || 0}</span>
-          </div>
         </motion.div>
 
         {/* Users Table */}
-        <motion.div variants={fadeInUp} className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800">
+        <motion.div variants={fadeInUp} className="bg-black border border-[#72c306]/30 rounded-lg shadow-lg shadow-[#72c306]/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#72c306]/20">
             <h3 className="text-lg font-semibold text-white">
               Users ({isLoading ? '...' : users.length})
               {isLoading && <Loader2 className="inline h-4 w-4 ml-2 animate-spin text-[#72c306]" />}
@@ -315,8 +365,8 @@ const UserManagementPage = () => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-800">
-              <thead className="bg-gray-800">
+            <table className="min-w-full divide-y divide-[#72c306]/20">
+              <thead className="bg-black border-b border-[#72c306]/30">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     User
@@ -335,7 +385,7 @@ const UserManagementPage = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-900 divide-y divide-gray-800">
+              <tbody className="bg-black divide-y divide-[#72c306]/20">
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center">
@@ -358,7 +408,7 @@ const UserManagementPage = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="hover:bg-gray-800/50"
+                      className="hover:bg-[#72c306]/5"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -455,31 +505,6 @@ const UserManagementPage = () => {
           </div>
         </motion.div>
 
-        {/* Stats */}
-        <motion.div variants={fadeInUp} className="mt-6 grid md:grid-cols-4 gap-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-6 text-center">
-            <div className="text-2xl font-bold text-[#72c306] mb-1">{stats.total || 0}</div>
-            <div className="text-sm text-gray-400">Total Users</div>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-6 text-center">
-            <div className="text-2xl font-bold text-[#72c306] mb-1">
-              {stats.verified || 0}
-            </div>
-            <div className="text-sm text-gray-400">Verified Users</div>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-6 text-center">
-            <div className="text-2xl font-bold text-[#72c306] mb-1">
-              {stats.admins || 0}
-            </div>
-            <div className="text-sm text-gray-400">Admin Users</div>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-6 text-center">
-            <div className="text-2xl font-bold text-orange-400 mb-1">
-              {stats.unverified || 0}
-            </div>
-            <div className="text-sm text-gray-400">Pending Users</div>
-          </div>
-        </motion.div>
       </motion.div>
 
       {/* Add User Modal */}

@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Menu, Bell, Search, User, LogOut, Settings, Shield } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, Bell, Search, User, LogOut, Settings, Shield, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSessionCountdown } from '@/hooks/useSessionCountdown';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,15 +22,34 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  
+  // Session countdown hook
+  const { formattedTime, isExpired, timeRemaining, resetSession } = useSessionCountdown({
+    onSessionExpired: async () => {
+      await logout();
+    }
+  });
 
   const handleLogout = async () => {
     await logout();
   };
 
+  const handleProfileSettings = () => {
+    router.push('/dashboard/profile-settings');
+  };
+
   const isAdmin = user?.role === 'ADMIN';
+  
+  // Determine countdown color based on remaining time
+  const getCountdownColor = () => {
+    if (timeRemaining > 300) return 'text-green-400'; // > 5 minutes: green
+    if (timeRemaining > 120) return 'text-yellow-400'; // > 2 minutes: yellow
+    return 'text-red-400'; // <= 2 minutes: red
+  };
 
   return (
-    <header className="dark sticky top-0 z-40 w-full border-b border-gray-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/90">
+    <header className="dark sticky top-0 z-40 w-full border-b border-[#72c306]/30 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/90">
       <div className="flex h-20 items-center justify-between px-6">
         {/* Left Section */}
         <div className="flex items-center">
@@ -74,16 +95,16 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-56 border-gray-600 shadow-2xl z-[100] [&]:bg-gray-900 [&]:text-white [&>*]:text-white"
+              className="w-56 border-[#72c306]/30 shadow-2xl z-[100] !bg-black"
               align="end"
               forceMount
               style={{
-                backgroundColor: 'rgb(17, 24, 39)', // gray-900
+                backgroundColor: '#000000 !important',
                 color: 'white',
-                border: '1px solid rgb(75, 85, 99)' // gray-600
+                border: '1px solid rgba(114, 195, 6, 0.3)' // muted green
               }}
             >
-              <DropdownMenuLabel className="font-normal">
+              <DropdownMenuLabel className="font-normal" style={{ backgroundColor: '#000000' }}>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none text-white">
                     {user?.fullName}
@@ -100,25 +121,47 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   </span>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-white hover:bg-gray-700 focus:bg-gray-700">
+              
+              {/* Session Countdown */}
+              <div className="px-2 py-2 border-b border-[#72c306]/30" style={{ color: 'white', backgroundColor: '#000000' }}>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-white">Session Duration</span>
+                  </div>
+                  <div className={`font-mono font-medium ${getCountdownColor()}`}>
+                    {formattedTime}
+                  </div>
+                </div>
+                {timeRemaining <= 300 && ( // Show warning when <= 5 minutes
+                  <div className="mt-1 flex justify-center">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white">
+                      {timeRemaining <= 120
+                        ? '> Session Expiring Soon'
+                        : '> Session Expiring Soon'
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <DropdownMenuItem
+                onClick={handleProfileSettings}
+                className="text-white hover:bg-gray-800 focus:bg-gray-800 cursor-pointer"
+                style={{ color: 'white', backgroundColor: '#000000' }}
+              >
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>Profile Settings</span>
               </DropdownMenuItem>
               {isAdmin && (
-                <DropdownMenuItem className="text-[#72c306] hover:bg-gray-700 focus:bg-gray-700">
+                <DropdownMenuItem className="text-[#72c306] hover:bg-gray-800 focus:bg-gray-800" style={{ backgroundColor: '#000000' }}>
                   <Shield className="mr-2 h-4 w-4" />
                   <span>Admin Panel</span>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:bg-gray-700 focus:bg-gray-700 hover:text-red-300">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:bg-gray-800 focus:bg-gray-800 hover:text-red-300" style={{ backgroundColor: '#000000' }}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

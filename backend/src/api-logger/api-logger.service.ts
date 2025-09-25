@@ -17,17 +17,36 @@ export class ApiLoggerService {
     totalTokens?: number;
     errorMessage?: string;
     errorCode?: string;
-    userId?: string;
+    userId: string; // Required field according to Prisma schema
     requestSize?: number;
     responseSize?: number;
   }) {
     try {
+      // Validate required fields before attempting to create
+      if (!data.userId) {
+        console.warn('API call logging skipped: userId is required but not provided');
+        return null;
+      }
+
+      // Check if user exists before logging
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { id: true }
+      });
+
+      if (!userExists) {
+        console.warn(`API call logging skipped: User ${data.userId} not found in database`);
+        return null;
+      }
+
       return await this.prisma.apiCallLog.create({
         data,
       });
     } catch (error) {
       console.error('Failed to log API call:', error);
+      console.error('Data being logged:', JSON.stringify(data, null, 2));
       // Don't throw error - logging should not break main functionality
+      return null;
     }
   }
 

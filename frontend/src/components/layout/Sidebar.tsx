@@ -13,7 +13,15 @@ import {
   Image,
   Sparkles,
   MessageSquare,
-  Zap
+  Zap,
+  Wallet,
+  CreditCard,
+  BarChart3,
+  Clock,
+  Upload,
+  Tag,
+  Briefcase,
+  Brain
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -37,14 +45,59 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       href: '/dashboard',
       icon: LayoutDashboard,
       allowedRoles: ['USER', 'ADMIN']
+    },
+    {
+      name: 'Business Information',
+      href: '/dashboard/business-information',
+      icon: Briefcase,
+      allowedRoles: ['USER', 'ADMIN']
+    }
+  ];
+
+  const userFinanceItems = [
+    {
+      name: 'Wallet',
+      href: '/dashboard/wallet',
+      icon: Wallet,
+      allowedRoles: ['USER', 'ADMIN']
+    },
+    {
+      name: 'Billing & Usage',
+      href: '/dashboard/billing',
+      icon: BarChart3,
+      allowedRoles: ['USER', 'ADMIN']
     }
   ];
 
   const adminItems = [
     {
-      name: 'Management Users',
+      name: 'Manage Users',
       href: '/admin/users',
       icon: Users,
+      allowedRoles: ['ADMIN']
+    },
+    {
+      name: 'Manage Wallet',
+      href: '/admin/manage-wallet',
+      icon: Wallet,
+      allowedRoles: ['ADMIN']
+    },
+    {
+      name: 'Manage Topup',
+      href: '/admin/manage-topup',
+      icon: Upload,
+      allowedRoles: ['ADMIN']
+    },
+    {
+      name: 'Manage Promo',
+      href: '/admin/manage-promo',
+      icon: Tag,
+      allowedRoles: ['ADMIN']
+    },
+    {
+      name: 'Manage Trial',
+      href: '/admin/manage-trial',
+      icon: Clock,
       allowedRoles: ['ADMIN']
     },
     {
@@ -57,26 +110,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const serviceItems = [
     {
-      name: 'Smart Thumbnail',
-      href: '/admin/smart-thumbnail',
+      name: 'Image Generator',
+      href: '/dashboard/services/image-generator',
       icon: Image,
-      allowedRoles: ['ADMIN']
+      allowedRoles: ['USER', 'ADMIN']
     },
     {
-      name: 'Smart Captions',
-      href: '/admin/smart-captions',
+      name: 'Caption Generator',
+      href: '/dashboard/services/caption-generator',
       icon: MessageSquare,
-      allowedRoles: ['ADMIN']
+      allowedRoles: ['USER', 'ADMIN']
     },
-    {
-      name: 'Optimize Thumbnail',
-      href: '/admin/optimize-thumbnail',
-      icon: Sparkles,
-      allowedRoles: ['ADMIN']
-    }
   ];
 
   const filteredNavigationItems = navigationItems.filter(item =>
+    item.allowedRoles.includes(user?.role || 'USER')
+  );
+
+  const filteredUserFinanceItems = userFinanceItems.filter(item =>
     item.allowedRoles.includes(user?.role || 'USER')
   );
 
@@ -100,12 +151,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 z-50 h-full w-64 bg-black border-r border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed top-0 left-0 z-50 h-full w-64 bg-black border-r border-[#72c306]/30 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-gray-800">
+          <div className="flex items-center justify-between h-20 px-6 border-b border-[#72c306]/30">
             <div className="flex-1 flex justify-center">
               <Link href="/" className="flex items-center">
                 <img
@@ -157,10 +208,45 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Services Section */}
-            {isAdmin && filteredServiceItems.length > 0 && (
+            {/* Finance Section - for users */}
+            {filteredUserFinanceItems.length > 0 && (
               <>
-                <div className="border-t border-gray-800 my-4" />
+                <div className="border-t border-[#72c306]/30 my-4" />
+                <div className="space-y-3">
+                  <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Finance
+                  </p>
+                  <div className="space-y-1">
+                    {filteredUserFinanceItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
+                      
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                            isActive
+                              ? "bg-gradient-to-r from-[#72c306] to-[#8fd428] text-white shadow-lg shadow-[#72c306]/25"
+                              : "text-gray-300 hover:text-white hover:bg-gray-800/50"
+                          )}
+                          onClick={onClose}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Services Section */}
+            {filteredServiceItems.length > 0 && (
+              <>
+                <div className="border-t border-[#72c306]/30 my-4" />
                 <div className="space-y-3">
                   <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Services
@@ -195,7 +281,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             {/* Administration Section */}
             {isAdmin && filteredAdminItems.length > 0 && (
               <>
-                <div className="border-t border-gray-800 my-4" />
+                <div className="border-t border-[#72c306]/30 my-4" />
                 <div className="space-y-3">
                   <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Administration
@@ -240,7 +326,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </nav>
 
           {/* Back to Home - Bottom */}
-          <div className="p-4 border-t border-gray-800">
+          <div className="p-4 border-t border-[#72c306]/30">
             <Link
               href="/"
               className={cn(

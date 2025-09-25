@@ -9,7 +9,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { LoginData } from '@/types/auth.types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { ShineBorder } from '@/components/ui/shine-border';
 import OAuthButtons from './OAuthButtons';
+import AdvancedNavbar from '@/components/layout/AdvancedNavbar';
+import Footer from '@/components/layout/Footer';
+import FloatingMascot from '@/components/ui/FloatingMascot';
 import { toast } from 'sonner';
 
 const LoginForm = () => {
@@ -89,7 +93,8 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="grid lg:grid-cols-2 min-h-screen">
+      <AdvancedNavbar />
+      <div className="grid lg:grid-cols-2 min-h-screen pt-20">
         {/* Left Side - Login Form */}
         <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -98,7 +103,14 @@ const LoginForm = () => {
             transition={{ duration: 0.5 }}
             className="max-w-md w-full space-y-8"
           >
-            <div className="rounded-xl border-2 border-[#72c306] bg-black p-8 shadow-[0_0_20px_rgba(114,195,6,0.15)]">
+            <div className="rounded-xl bg-black p-8 shadow-[0_0_20px_rgba(114,195,6,0.15)] relative overflow-hidden">
+              <ShineBorder
+                shineColor={["#72c306", "#8fd428", "#72c306"]}
+                borderWidth={2}
+                duration={6}
+                className="absolute inset-0 rounded-xl"
+              />
+              <div className="relative z-10">
               <div className="text-center">
                 <div className="mx-auto h-12 w-12 rounded-lg bg-gradient-to-r from-[#72c306] to-[#8fd428] flex items-center justify-center mb-4">
                   <Lock className="h-6 w-6 text-white" />
@@ -213,6 +225,7 @@ const LoginForm = () => {
                   </span>
                 </div>
               </form>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -357,6 +370,10 @@ const LoginForm = () => {
       </div>
       
       </div>
+      <Footer />
+
+      {/* Floating Mascot */}
+      <FloatingMascot />
     </div>
   );
 };
