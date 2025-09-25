@@ -34,11 +34,12 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
-      'https://nusantarax.web.id'
+      'https://nusantarax.web.id',
+      'https://www.nusantarax.web.id'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
   });
   
