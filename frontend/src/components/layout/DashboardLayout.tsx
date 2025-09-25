@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import ProtectedRoute from './ProtectedRoute';
+import ProtectedRouteWrapper from './ProtectedRouteWrapper';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import OAuthSuccessHandler from '@/components/auth/OAuthSuccessHandler';
@@ -29,8 +29,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   return (
-    <ProtectedRoute requiredRole={requiredRole}>
-      <OAuthSuccessHandler />
+    <ProtectedRouteWrapper requiredRole={requiredRole}>
+      <Suspense fallback={null}>
+        <OAuthSuccessHandler />
+      </Suspense>
       <div className="flex h-screen bg-black">
         {/* Sidebar */}
         <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
@@ -51,7 +53,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       
       {/* Floating AI Assistant */}
       <FloatingAIAssistant />
-    </ProtectedRoute>
+    </ProtectedRouteWrapper>
   );
 };
 
